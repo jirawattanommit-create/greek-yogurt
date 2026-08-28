@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin Dashboard - จัดการออเดอร์</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        :root {
+            --primary: #e9899d;
+            --primary-dark: #d96f86;
+            --primary-light: #fff0f3;
+            --bg-color: #fcf8f6;
+            --text-main: #2c2c2c;
+            --text-muted: #7f7f7f;
+            --radius-md: 14px;
+            --shadow-soft: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body { 
+            background: var(--bg-color); 
+            padding: 16px; 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Sukhumvit Set", "Noto Sans Thai", sans-serif;
+            color: var(--text-main);
+        }
+
+        .admin-container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            padding-bottom: 40px;
+        }
+
+        .admin-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 16px; 
+            background: white;
+            padding: 16px 20px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .admin-header h2 {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .refresh-btn { 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            padding: 10px 16px; 
+            border-radius: 12px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 13px;
+            transition: transform 0.1s ease;
+        }
+
+        .refresh-btn:active {
+            transform: scale(0.95);
+        }
+
+        .order-card { 
+            background: white; 
+            padding: 16px; 
+            border-radius: var(--radius-md); 
+            margin-bottom: 12px; 
+            box-shadow: var(--shadow-soft); 
+            border: 1px solid #eee; 
+            animation: fadeIn 0.25s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .order-top { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            font-weight: bold; 
+            margin-bottom: 10px; 
+            font-size: 14px; 
+            color: #444;
+        }
+
+        .badge { 
+            padding: 4px 10px; 
+            border-radius: 20px; 
+            font-size: 11px; 
+            font-weight: 600;
+        }
+        .badge-pending { background: #fff3cd; color: #856404; }
+        .badge-cooking { background: #cce5ff; color: #004085; }
+        .badge-done { background: #d4edda; color: #155724; }
+
+        .order-details { 
+            font-size: 13px; 
+            color: #555; 
+            margin-bottom: 10px; 
+            line-height: 1.5; 
+            background: #fafafa;
+            padding: 10px 12px;
+            border-radius: 10px;
+        }
+
+        .order-items { 
+            font-size: 13px; 
+            color: #333; 
+            margin-bottom: 10px; 
+            background: #f9f9f9; 
+            padding: 10px 12px; 
+            border-radius: 10px; 
+            border-left: 3px solid var(--primary);
+            white-space: pre-line;
+            line-height: 1.4;
+        }
+
+        .order-price-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 0 4px;
+        }
+
+        .order-price { 
+            font-size: 16px; 
+            color: var(--primary-dark); 
+            font-weight: bold; 
+        }
+
+        .action-row { 
+            display: flex; 
+            gap: 10px; 
+        }
+
+        .action-row button { 
+            flex: 1; 
+            padding: 12px; 
+            border: none; 
+            border-radius: 12px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 14px; 
+            transition: transform 0.1s ease;
+        }
+
+        .action-row button:active {
+            transform: scale(0.96);
+        }
+
+        .btn-cook { background: #e7f1ff; color: #0d6efd; }
+        .btn-finish { background: #d1e7dd; color: #198754; }
+
+        .loading-text, .empty-text {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 40px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <div class="admin-header">
+            <h2>📋 จัดการออเดอร์ร้านค้า</h2>
+            <button class="refresh-btn" onclick="fetchOrders()">🔄 รีเฟรช</button>
+        </div>
+        <div id="orders-list">
+            <div class="loading-text">กำลังโหลดข้อมูลออเดอร์...</div>
+        </div>
+    </div>
+
+    <script>
+        // ใช้ Web App URL เดียวกับฝั่งลูกค้าที่คุณใช้งานอยู่
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx7GU2CGbZx6tMeAi8RHz1NkEb7VEbHTJY2dybkcDIZS8MUouxbr9endAa0bh7H2o5G/exec";
+
+        async function fetchOrders() {
+            const listEl = document.getElementById('orders-list');
+            listEl.innerHTML = '<div class="loading-text">กำลังโหลด...</div>';
+
+            try {
+                const response = await fetch(`${APPS_SCRIPT_URL}?action=getOrders`);
+                const orders = await response.json();
+
+                if (!orders || orders.length === 0) {
+                    listEl.innerHTML = '<div class="empty-text">📭 ยังไม่มีออเดอร์ในระบบ</div>';
+                    return;
+                }
+
+                listEl.innerHTML = '';
+                // เรียงลำดับจากออเดอร์ล่าสุดขึ้นมาด้านบน
+                orders.reverse().forEach(order => {
+                    let badgeClass = 'badge-pending';
+                    if (order.status === 'กำลังทำ') badgeClass = 'badge-cooking';
+                    if (order.status === 'เสร็จสิ้น') badgeClass = 'badge-done';
+
+                    const card = document.createElement('div');
+                    card.className = 'order-card';
+                    card.innerHTML = `
+                        <div class="order-top">
+                            <span>#${order.orderId || '-'}</span>
+                            <span class="badge ${badgeClass}">${order.status || 'รอดำเนินการ'}</span>
+                        </div>
+                        <div class="order-details">
+                            🕒 <b>เวลา:</b> ${order.timestamp || '-'}<br>
+                            👤 <b>ชื่อ:</b> ${order.customerName} | 📞 <a href="tel:${order.phone}" style="color:inherit; text-decoration:underline;">${order.phone}</a><br>
+                            📍 <b>ที่อยู่:</b> ${order.address}
+                        </div>
+                        <div class="order-items">
+                            🛒 <b>รายการสินค้า:</b><br>${order.items}
+                        </div>
+                        <div class="order-price-row">
+                            <span style="font-size: 13px; color: #666;">ยอดรวมทั้งสิ้น</span>
+                            <span class="order-price">฿${order.totalPrice}</span>
+                        </div>
+                        <div class="action-row">
+                            <button class="btn-cook" onclick="updateOrderStatus(${order.rowId}, 'กำลังทำ')">🍳 กำลังทำ</button>
+                            <button class="btn-finish" onclick="updateOrderStatus(${order.rowId}, 'เสร็จสิ้น')">✅ เสร็จสิ้น</button>
+                        </div>
+                    `;
+                    listEl.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error(error);
+                listEl.innerHTML = '<div class="empty-text" style="color:red;">ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง</div>';
+            }
+        }
+
+        async function updateOrderStatus(rowId, status) {
+            try {
+                await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'updateStatus', rowId: rowId, status: status })
+                });
+
+                // แจ้งเตือนแบบสั้นๆ หรือรีโหลดทันทีเพื่อให้เห็นการเปลี่ยนแปลง
+                fetchOrders(); 
+            } catch (error) {
+                alert('เกิดข้อผิดพลาดในการอัปเดตสถานะ');
+            }
+        }
+
+        // โหลดข้อมูลอัตโนมัติเมื่อเปิดหน้าเว็บ
+        fetchOrders();
+    </script>
+</body>
+</html>

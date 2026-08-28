@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+>
+
+    <title>Greek Yogurt</title>
+    <!-- ซ่อนแถบ URL เบราว์เซอร์เมื่อเพิ่มลงหน้าจอโฮม (iOS / Android) -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+<!-- เปลี่ยนสีแถบสถานะบนสุดของเบราว์เซอร์ (Theme Color) ให้เข้ากับโทนร้าน -->
+<meta name="theme-color" content="#f4b6c2">
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+</head>
+
+
+<body>
+
+
+    <!-- =========================
+         HEADER
+    ========================== -->
+
+    <!-- =========================
+         HEADER & CATEGORY
+    ========================== -->
+    <header class="header">
+        <div class="header-icon">🥣</div>
+        <h1>Greek Yogurt</h1>
+        <p>กรีกโยเกิร์ตโฮมเมด สดใหม่ทุกวัน</p>
+    </header>
+
+    <!-- แถบหมวดหมู่แบบเลื่อนได้ (Sticky) -->
+    <nav class="category-nav">
+        <button class="category-btn active">ทั้งหมด</button>
+        <button class="category-btn">รสยอดนิยม</button>
+        <button class="category-btn">ผลไม้สด</button>
+        <button class="category-btn">Topping</button>
+    </nav>
+
+    <!-- =========================
+         MENU CONTAINER
+    ========================== -->
+    <main class="container">
+        <h2 class="section-title">เมนูแนะนำ</h2>
+
+        <div class="products">
+            <!-- Original -->
+            <div class="product-card" onclick="openProduct('Original', 59)">
+                <div class="product-img">🥣</div>
+                <div class="product-info">
+                    <h3>Original</h3>
+                    <p>กรีกโยเกิร์ตรสธรรมชาติ เนื้อเข้มข้น</p>
+                    <div class="product-price-row">
+                        <strong class="price">59 ฿</strong>
+                        <button class="add-btn">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Honey -->
+            <div class="product-card" onclick="openProduct('Honey', 69)">
+                <div class="product-img">🍯</div>
+                <div class="product-info">
+                    <h3>Honey</h3>
+                    <p>กรีกโยเกิร์ต + น้ำผึ้งแท้ 100%</p>
+                    <div class="product-price-row">
+                        <strong class="price">69 ฿</strong>
+                        <button class="add-btn">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Berry -->
+            <div class="product-card" onclick="openProduct('Berry', 79)">
+                <div class="product-img">🍓</div>
+                <div class="product-info">
+                    <h3>Berry</h3>
+                    <p>กรีกโยเกิร์ต + ผลไม้ตระกูลเบอร์รี</p>
+                    <div class="product-price-row">
+                        <strong class="price">79 ฿</strong>
+                        <button class="add-btn">+</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- =========================
+         STICKY BOTTOM CART BAR
+    ========================== -->
+    <div class="cart-bar" onclick="openCart()">
+        <div class="cart-bar-info">
+            <div class="cart-badge" id="cart-count">0</div>
+            <div class="cart-text">
+                <span class="cart-title">ตะกร้าของคุณ</span>
+                <span class="cart-sub">แตะเพื่อดูรายการสั่งซื้อ</span>
+            </div>
+        </div>
+        <div class="cart-bar-total" id="cart-bar-total">0 ฿</div>
+    </div>
+
+
+
+    <!-- =================================================
+     PRODUCT MODAL (BOTTOM SHEET STYLE)
+================================================== -->
+<div id="product-modal" class="modal">
+    <div class="product-modal-box">
+        <!-- แถบจับสไลด์แบบแอปมือถือ -->
+        <div class="sheet-handle"></div>
+
+        <!-- หัวข้อและปุ่มปิด -->
+        <div class="modal-header">
+            <div>
+                <h2 id="modal-product-name">สินค้า</h2>
+                <p class="base-price">ราคาเริ่มต้น <strong id="modal-product-price">0</strong> บาท</p>
+            </div>
+            <button class="close-button" onclick="closeProduct()">✕</button>
+        </div>
+
+        <!-- รายการ Topping -->
+        <div class="topping-section">
+            <div class="section-head">
+                <h3>เลือก Topping</h3>
+                <span class="section-description">เลือกได้ตามใจชอบ</span>
+            </div>
+
+            <div class="topping-grid">
+                <label class="topping-item">
+                    <div class="topping-info">
+                        <input type="checkbox" value="15" data-name="สตรอว์เบอร์รี" onchange="updateProductPrice()">
+                        <span class="topping-name">🍓 สตรอว์เบอร์รี</span>
+                    </div>
+                    <span class="topping-price">+15 บาท</span>
+                </label>
+
+                <label class="topping-item">
+                    <div class="topping-info">
+                        <input type="checkbox" value="10" data-name="น้ำผึ้ง" onchange="updateProductPrice()">
+                        <span class="topping-name">🍯 น้ำผึ้ง</span>
+                    </div>
+                    <span class="topping-price">+10 บาท</span>
+                </label>
+
+                <label class="topping-item">
+                    <div class="topping-info">
+                        <input type="checkbox" value="15" data-name="Granola" onchange="updateProductPrice()">
+                        <span class="topping-name">🥣 Granola</span>
+                    </div>
+                    <span class="topping-price">+15 บาท</span>
+                </label>
+
+                <label class="topping-item">
+                    <div class="topping-info">
+                        <input type="checkbox" value="20" data-name="กล้วย" onchange="updateProductPrice()">
+                        <span class="topping-name">🍌 กล้วย</span>
+                    </div>
+                    <span class="topping-price">+20 บาท</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- จำนวนสินค้า -->
+        <div class="quantity-section">
+            <h3>จำนวน</h3>
+            <div class="quantity-control">
+                <button onclick="changeProductQuantity(-1)">−</button>
+                <span id="product-quantity">1</span>
+                <button onclick="changeProductQuantity(1)">+</button>
+            </div>
+        </div>
+
+        <!-- ปุ่มเพิ่มลงตะกร้าพร้อมแสดงราคารวม -->
+        <button class="add-to-cart-button" onclick="addProductToCart()">
+            <span>🛒 เพิ่มลงตะกร้า</span>
+            <strong><span id="product-total-price">0</span> บาท</strong>
+        </button>
+    </div>
+</div>
+
+
+
+    <!-- =================================================
+     CART MODAL (BOTTOM SHEET STYLE)
+================================================== -->
+<div id="cart-modal" class="modal">
+    <div class="cart-box">
+        <!-- แถบจับสไลด์ -->
+        <div class="sheet-handle"></div>
+
+        <div class="modal-header">
+            <div>
+                <h2>🛒 ตะกร้าของคุณ</h2>
+                <p class="cart-subtitle">ตรวจสอบรายการและยืนยันการสั่งซื้อ</p>
+            </div>
+            <button class="close-button" onclick="closeCart()">✕</button>
+        </div>
+
+        <!-- รายการสินค้าในตะกร้า -->
+        <div id="cart-items" class="cart-items-list">
+            <!-- JavaScript จะเรนเดอร์รายการสินค้าที่นี่ -->
+        </div>
+
+        <!-- สรุปราคารวมและปุ่มดำเนินการ -->
+        <div class="cart-summary-footer">
+            <div class="cart-total-row">
+                <span>ราคารวมทั้งหมด</span>
+                <strong class="cart-total-price"><span id="cart-total">0</span> บาท</strong>
+            </div>
+
+            <button class="checkout-button" onclick="openCustomerForm()">
+    <span>ดำเนินการสั่งซื้อ</span>
+    <span>➔</span>
+</button>
+        </div>
+    </div>
+</div>
+
+
+
+    <!-- =================================================
+         CUSTOMER FORM
+    ================================================== -->
+
+    <div
+        id="customer-modal"
+        class="modal"
+    >
+
+        <div class="customer-box">
+
+
+            <div class="modal-header">
+
+                <h2>
+                    📋 ข้อมูลผู้สั่งซื้อ
+                </h2>
+
+                <button
+                    class="close-button"
+                    onclick="closeCustomerForm()"
+                >
+                    ✕
+                </button>
+
+            </div>
+
+
+
+            <p class="form-description">
+
+                กรุณากรอกข้อมูลสำหรับจัดส่งสินค้า
+
+            </p>
+
+
+
+            <!-- ชื่อ -->
+
+            <div class="form-group">
+
+                <label>
+                    ชื่อผู้สั่งซื้อ
+                    <span>*</span>
+                </label>
+
+                <input
+                    type="text"
+                    id="customer-name"
+                    placeholder="เช่น น้องเอ"
+                >
+
+            </div>
+
+
+
+            <!-- เบอร์ -->
+
+            <div class="form-group">
+
+                <label>
+                    เบอร์โทรศัพท์
+                    <span>*</span>
+                </label>
+
+                <input
+                    type="tel"
+                    id="customer-phone"
+                    placeholder="เช่น 0812345678"
+                    maxlength="10"
+                >
+
+            </div>
+
+
+
+            <!-- หอพัก -->
+
+            <div class="form-group">
+
+                <label>
+                    ชื่อหอพัก / บ้านพัก
+                    <span>*</span>
+                </label>
+
+                <input
+                    type="text"
+                    id="customer-place"
+                    placeholder="เช่น หอ A"
+                >
+
+            </div>
+
+
+
+            <!-- ห้อง -->
+
+            <div class="form-group">
+
+                <label>
+                    เลขห้อง / บ้านเลขที่
+                    <span>*</span>
+                </label>
+
+                <input
+                    type="text"
+                    id="customer-room"
+                    placeholder="เช่น ห้อง 305"
+                >
+
+            </div>
+
+
+
+            <!-- รายละเอียด -->
+
+            <div class="form-group">
+
+                <label>
+                    รายละเอียดเพิ่มเติม
+                </label>
+
+                <textarea
+                    id="customer-detail"
+                    rows="3"
+                    placeholder="เช่น ฝากไว้หน้าห้อง / โทรก่อนส่ง"
+                ></textarea>
+
+            </div>
+
+
+
+            <!-- แจ้งเตือนชำระเงิน -->
+
+            <div class="payment-notice">
+
+                <div class="payment-icon">
+                    💳
+                </div>
+
+                <div>
+
+                    <strong>
+                        ชำระเงินก่อนเท่านั้น
+                    </strong>
+
+                    <p>
+                        กรุณาชำระเงินก่อน ทางร้านจึงจะดำเนินการจัดเตรียมออเดอร์
+                    </p>
+
+                </div>
+
+            </div>
+
+
+
+            <button
+                class="continue-payment-button"
+                onclick="goToPayment()"
+            >
+
+                ตรวจสอบข้อมูลและชำระเงิน
+
+            </button>
+
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =================================================
+         PAYMENT MODAL
+    ================================================== -->
+
+    <div
+        id="payment-modal"
+        class="modal"
+    >
+
+        <div class="payment-box">
+
+
+            <div class="modal-header">
+
+                <h2>
+                    💳 ชำระเงิน
+                </h2>
+
+                <button
+                    class="close-button"
+                    onclick="closePayment()"
+                >
+                    ✕
+                </button>
+
+            </div>
+
+
+
+            <!-- Order Number -->
+
+            <div class="payment-order">
+
+                <span>
+                    ยอดที่ต้องชำระ
+                </span>
+
+                <strong id="payment-total">
+                    0 บาท
+                </strong>
+
+            </div>
+
+
+
+            <!-- Customer Summary -->
+
+            <div class="customer-summary">
+
+                <h3>
+                    ข้อมูลผู้รับ
+                </h3>
+
+                <p>
+                    👤 <span id="summary-name"></span>
+                </p>
+
+                <p>
+                    📞 <span id="summary-phone"></span>
+                </p>
+
+                <p>
+                    🏠 <span id="summary-place"></span>
+                </p>
+
+                <p>
+                    🚪 <span id="summary-room"></span>
+                </p>
+
+                <p id="summary-detail-row">
+                    📝 <span id="summary-detail"></span>
+                </p>
+
+            </div>
+
+
+
+            <!-- Payment Method -->
+
+            <div class="payment-method">
+
+                <h3>
+                    วิธีชำระเงิน
+                </h3>
+
+
+                <div class="payment-method-card">
+
+                    <div class="promptpay-icon">
+                        ฿
+                    </div>
+
+                    <div>
+
+                        <strong>
+                            QR PromptPay
+                        </strong>
+
+                        <p>
+                            สแกน QR เพื่อชำระเงิน
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- QR Placeholder -->
+
+            <div class="qr-placeholder">
+
+                <div class="qr-box">
+                    QR
+                </div>
+
+                <p>
+                    QR สำหรับชำระเงิน
+                </p>
+
+                <small>
+                    ตอนนี้เป็นหน้าจำลอง
+                </small>
+
+            </div>
+
+
+
+            <button
+                class="paid-button"
+                onclick="paymentSuccess()"
+            >
+
+                ✅ ฉันชำระเงินแล้ว
+
+            </button>
+
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =================================================
+         SUCCESS MODAL
+    ================================================== -->
+
+    <div
+        id="success-modal"
+        class="modal"
+    >
+
+        <div class="success-box">
+
+
+            <div class="success-icon">
+                🎉
+            </div>
+
+
+            <h2>
+                สั่งซื้อสำเร็จ!
+            </h2>
+
+
+            <p>
+                ขอบคุณสำหรับการสั่งซื้อครับ
+            </p>
+
+
+            <div class="order-number-box">
+
+                <span>
+                    เลขออเดอร์
+                </span>
+
+                <strong id="order-number">
+                    GY000001
+                </strong>
+
+            </div>
+
+
+            <p class="success-message">
+
+                ทางร้านได้รับข้อมูลการสั่งซื้อแล้ว
+                <br>
+                และจะดำเนินการจัดเตรียมสินค้าให้ครับ
+
+            </p>
+
+
+            <button
+                class="success-button"
+                onclick="finishOrder()"
+            >
+
+                กลับหน้าเมนู
+
+            </button>
+
+
+        </div>
+
+    </div>
+
+
+
+    <!-- JavaScript -->
+
+    <script src="script.js"></script>
+
+
+</body>
+
+</html>

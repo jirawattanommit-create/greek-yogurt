@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin - จัดการสินค้า</title>
+    <style>
+        :root {
+            --primary: #e9899d;
+            --primary-dark: #d96f86;
+            --primary-light: #fff0f3;
+            --bg-color: #fcf8f6;
+            --text-main: #2c2c2c;
+            --text-muted: #7f7f7f;
+            --radius-md: 14px;
+            --shadow-soft: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Sukhumvit Set", "Noto Sans Thai", sans-serif; }
+        body { background: var(--bg-color); padding: 16px; color: var(--text-main); }
+        .container { max-width: 600px; margin: 0 auto; padding-bottom: 40px; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; background: white; padding: 16px; border-radius: var(--radius-md); box-shadow: var(--shadow-soft); margin-bottom: 16px; }
+        .header h2 { font-size: 18px; font-weight: 700; }
+        .btn-add { background: var(--primary); color: white; border: none; padding: 10px 16px; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 13px; }
+        
+        /* Product Card List */
+        .product-card { display: flex; align-items: center; background: white; padding: 12px; border-radius: var(--radius-md); margin-bottom: 10px; box-shadow: var(--shadow-soft); gap: 12px; }
+        .product-card img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; background: #eee; flex-shrink: 0; }
+        .product-info { flex: 1; }
+        .product-info h4 { font-size: 15px; margin-bottom: 4px; }
+        .product-info p { color: var(--primary-dark); font-weight: bold; font-size: 14px; }
+        .btn-group { display: flex; gap: 6px; }
+        .btn-edit { background: #ffc107; border: none; padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold; }
+        .btn-delete { background: #dc3545; color: white; border: none; padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: bold; }
+
+        /* Modal */
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; align-items: flex-end; backdrop-filter: blur(4px); }
+        .modal.show { display: flex; }
+        .modal-box { background: white; width: 100%; max-height: 90vh; border-radius: 24px 24px 0 0; padding: 20px; overflow-y: auto; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1.5px solid #eee; border-radius: 10px; font-size: 14px; outline: none; }
+        .form-group input:focus { border-color: var(--primary); }
+        
+        /* Preview Image */
+        .preview-container { text-align: center; margin-top: 8px; }
+        .preview-img { width: 100px; height: 100px; object-fit: cover; border-radius: 10px; border: 1px dashed #ccc; display: none; margin: 0 auto; }
+        
+        .btn-save { width: 100%; background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px; }
+        .btn-cancel { width: 100%; background: #f0f0f0; border: none; padding: 12px; border-radius: 12px; margin-top: 8px; cursor: pointer; font-weight: bold; color: #666; }
+
+        .loading-text, .empty-text { text-align: center; color: var(--text-muted); padding: 40px 0; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h2>🍦 จัดการสินค้า</h2>
+            <button class="btn-add" onclick="openModal()">+ เพิ่มสินค้า</button>
+        </div>
+
+        <!-- รายการสินค้า -->
+        <div id="product-list">
+            <div class="loading-text">กำลังโหลดข้อมูลสินค้า...</div>
+        </div>
+    </div>
+
+    <!-- Modal เพิ่ม/แก้ไข สินค้า -->
+    <div id="product-modal" class="modal">
+        <div class="modal-box">
+            <h3 id="modal-title" style="margin-bottom: 14px;">เพิ่มเมนูสินค้า</h3>
+            <form id="product-form" onsubmit="saveProduct(event)">
+                <input type="hidden" id="prod-rowid">
+                
+                <div class="form-group">
+                    <label>ชื่อสินค้า</label>
+                    <input type="text" id="prod-name" placeholder="เช่น กรีกโยเกิร์ตรสตอเบอร์รี" required>
+                </div>
+                <div class="form-group">
+                    <label>ราคา (บาท)</label>
+                    <input type="number" id="prod-price" placeholder="เช่น 69" required>
+                </div>
+                <div class="form-group">
+                    <label>ลิงก์รูปภาพสินค้า หรืออัปโหลด</label>
+                    <input type="text" id="prod-image" placeholder="วางลิงก์รูปภาพ (URL) หรือปล่อยว่างไว้">
+                </div>
+                <div class="form-group">
+                    <label>รูปภาพจากเครื่อง (ตัวเลือกเสริม)</label>
+                    <input type="file" id="prod-image-file" accept="image/*" capture="environment" onchange="previewImage(event)">
+                    <div class="preview-container">
+                        <img id="image-preview" class="preview-img" alt="Preview">
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-save">บันทึกสินค้า</button>
+                <button type="button" class="btn-cancel" onclick="closeModal()">ยกเลิก</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ใช้ Web App URL ตัวเดียวกับระบบออเดอร์
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx7GU2CGbZx6tMeAi8RHz1NkEb7VEbHTJY2dybkcDIZS8MUouxbr9endAa0bh7H2o5G/exec";
+
+        // โหลดข้อมูลสินค้าเมื่อเปิดหน้าเว็บ
+        document.addEventListener("DOMContentLoaded", fetchProducts);
+
+        async function fetchProducts() {
+            const listEl = document.getElementById('product-list');
+            listEl.innerHTML = '<div class="loading-text">กำลังโหลดข้อมูล...</div>';
+
+            try {
+                const response = await fetch(`${APPS_SCRIPT_URL}?action=getProducts`);
+                const products = await response.json();
+
+                if (!products || products.length === 0) {
+                    listEl.innerHTML = '<div class="empty-text">📭 ยังไม่มีสินค้าในระบบ</div>';
+                    return;
+                }
+
+                listEl.innerHTML = '';
+                products.forEach(product => {
+                    const card = document.createElement('div');
+                    card.className = 'product-card';
+                    card.innerHTML = `
+                        <img src="${product.image || 'https://via.placeholder.com/60'}" alt="Product">
+                        <div class="product-info">
+                            <h4>${product.name}</h4>
+                            <p>${product.price} ฿</p>
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn-edit" onclick='openEditModal(${JSON.stringify(product)})'>แก้ไข</button>
+                            <button class="btn-delete" onclick="deleteProduct(${product.rowId})">ลบ</button>
+                        </div>
+                    `;
+                    listEl.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error(error);
+                listEl.innerHTML = '<div class="empty-text" style="color:red;">ไม่สามารถโหลดข้อมูลสินค้าได้</div>';
+            }
+        }
+
+        function openModal() {
+            document.getElementById('modal-title').textContent = 'เพิ่มเมนูสินค้า';
+            document.getElementById('product-form').reset();
+            document.getElementById('prod-rowid').value = '';
+            document.getElementById('image-preview').style.display = 'none';
+            document.getElementById('product-modal').classList.add('show');
+        }
+
+        function openEditModal(product) {
+            document.getElementById('modal-title').textContent = 'แก้ไขเมนูสินค้า';
+            document.getElementById('prod-rowid').value = product.rowId;
+            document.getElementById('prod-name').value = product.name;
+            document.getElementById('prod-price').value = product.price;
+            document.getElementById('prod-image').value = product.image || '';
+            
+            if (product.image) {
+                const preview = document.getElementById('image-preview');
+                preview.src = product.image;
+                preview.style.display = 'block';
+            } else {
+                document.getElementById('image-preview').style.display = 'none';
+            }
+
+            document.getElementById('product-modal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('product-modal').classList.remove('show');
+            document.getElementById('product-form').reset();
+            document.getElementById('image-preview').style.display = 'none';
+        }
+
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('image-preview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    // ใส่ค่า Base64 ลงในช่องลิงก์รูปภาพชั่วคราว
+                    document.getElementById('prod-image').value = e.target.result;
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function saveProduct(event) {
+            event.preventDefault();
+            const rowId = document.getElementById('prod-rowid').value;
+            const name = document.getElementById('prod-name').value;
+            const price = document.getElementById('prod-price').value;
+            const image = document.getElementById('prod-image').value;
+
+            const payload = {
+                action: rowId ? 'updateProduct' : 'addProduct',
+                rowId: rowId ? Number(rowId) : null,
+                name: name,
+                price: Number(price),
+                image: image
+            };
+
+            try {
+                await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                alert('บันทึกข้อมูลสำเร็จ!');
+                closeModal();
+                setTimeout(fetchOrders || fetchProducts, 1000); // รีเฟรชรายการ
+            } catch (error) {
+                console.error(error);
+                alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+            }
+        }
+
+        async function deleteProduct(rowId) {
+            if (!confirm('คุณต้องการลบสินค้านี้ใช่หรือไม่?')) return;
+
+            try {
+                await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'deleteProduct', rowId: rowId })
+                });
+
+                alert('ลบสินค้าสำเร็จ');
+                setTimeout(fetchProducts, 1000);
+            } catch (error) {
+                console.error(error);
+                alert('เกิดข้อผิดพลาดในการลบสินค้า');
+            }
+        }
+    </script>
+</body>
+</html>

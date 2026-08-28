@@ -3,6 +3,7 @@
 // =====================================================
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx7GU2CGbZx6tMeAi8RHz1NkEb7VEbHTJY2dybkcDIZS8MUouxbr9endAa0bh7H2o5G/exec";
 const LINE_USER_ID = "U0e1d477c5ad81b49d34cbe5bafb9bbbc";
+const LINE_ACCESS_TOKEN = "44LpdXwdRP88grIfBDgM6Z1Q4/7ujL5OtA2DDZNBOTkP6ihYFKjASE6pr1kQOEIXZaMzZLE57MqRROkSfK/uJJuoicxhsvddo6RKksHrXuyPPO5yxDqMxvlNuo+iZDsE5jWtBoH8HnxGVsPhDg0HbwdB04t89/1O/w1cDnyilFU="; 
 
 // =====================================================
 // CART
@@ -392,109 +393,114 @@ function closePayment() {
 // =====================================================
 // SEND ORDER TO GOOGLE APPS SCRIPT
 // =====================================================
-
 function sendOrderToGoogleSheet(orderNumber) {
-
     let itemsText = "";
 
     cart.forEach(function (item, index) {
-
         let toppingNames =
             item.toppings && item.toppings.length > 0
                 ? item.toppings.map(t => t.name).join(", ")
                 : "ไม่มี Topping";
 
-
-        itemsText +=
-            `${index + 1}. ${item.name} x${item.quantity}`;
-
-        itemsText +=
-            ` | Topping: ${toppingNames}`;
-
-        itemsText +=
-            ` | ราคา: ${item.price * item.quantity} บาท\n`;
+        itemsText += `${index + 1}. ${item.name} x${item.quantity}`;
+        itemsText += ` | Topping: ${toppingNames}`;
+        itemsText += ` | ราคา: ${item.price * item.quantity} บาท\n`;
     });
 
+    let address = `${customerData.place} ห้อง/บ้านเลขที่ ${customerData.room}`;
 
-    // รวมสถานที่ + ห้อง
-    let address =
-        `${customerData.place} ห้อง/บ้านเลขที่ ${customerData.room}`;
-
-
-    // ข้อมูลที่จะส่งไป Google Sheets
     const payload = {
-
         orderId: orderNumber,
-
         customerName: customerData.name,
-
         phone: customerData.phone,
-
         address: address,
-
         items: itemsText,
-
         totalPrice: getCartTotal()
-
     };
-
 
     console.log("กำลังส่งออเดอร์:", payload);
 
-
     fetch(APPS_SCRIPT_URL, {
-
         method: "POST",
-
         mode: "no-cors",
-
         headers: {
             "Content-Type": "text/plain;charset=utf-8"
         },
-
         body: JSON.stringify(payload)
-
     })
-
     .then(() => {
-
-        console.log(
-            "บันทึกออเดอร์ลง Google Sheets แล้ว"
-        );
-
+        console.log("บันทึกออเดอร์ลง Google Sheets แล้ว");
     })
-
     .catch(error => {
-
-        console.error(
-            "ไม่สามารถส่งออเดอร์:",
-            error
-        );
-
+        console.error("ไม่สามารถส่งออเดอร์:", error);
     });
+}
+
+// =====================================================
+// 🟢 LINE NOTIFICATION FUNCTION (เพิ่มระบบแจ้งเตือนเข้า Line OA)
+// =====================================================
+function sendLineNotification(orderNumber, itemsText) {
+    const address = `${customerData.place} ห้อง ${customerData.room}` + (customerData.detail ? ` (หมายเหตุ: ${customerData.detail})` : '');
+    
+    const message = `🔔 มีออเดอร์ใหม่เข้ามา!\n\n` +
+                    `📋 เลขออเดอร์: #${orderNumber}\n` +
+                    `👤 ชื่อ: ${customerData.name}\n` +
+                    `📞 เบอร์: ${customerData.phone}\n` +
+                    `📍 ที่อยู่: ${address}\n\n` +
+                    `🛒 รายการสินค้า:\n${itemsText}\n` +
+                    `💰 ยอดรวมทั้งสิ้น: ${getCartTotal()} บาท`;
+
+    fetch('https://api.line.me/v2/bot/message/push', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + LINE_ACCESS_TOKEN
+        },
+        body: JSON.stringify({
+            to: LINE_USER_ID,
+            messages: [{ type: 'text', text: message }]
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            console.error('Line API Error status:', response.status);
+        } else {
+            console.log('ส่งแจ้งเตือนเข้า Line สำเร็จ');
+        }
+    })
+    .catch(error => console.error('Line Notification Error:', error));
 }
 
 // =====================================================
 // PAYMENT SUCCESS
 // =====================================================
 function paymentSuccess() {
-
     // สร้างเลขออเดอร์
     const orderNumber = createOrderNumber();
 
     // แสดงเลขออเดอร์
     document.getElementById("order-number").textContent = orderNumber;
 
+    // รวบรวมรายการสินค้าสำหรับส่งเข้า Line
+    let itemsText = "";
+    cart.forEach(function (item, index) {
+        let toppingNames = item.toppings && item.toppings.length > 0
+            ? item.toppings.map(t => t.name).join(", ")
+            : "ไม่มี Topping";
+        itemsText += `${index + 1}. ${item.name} x${item.quantity} (${toppingNames}) - ${item.price * item.quantity} บาท\n`;
+    });
+
     // บันทึกออเดอร์ลง Google Sheets
     sendOrderToGoogleSheet(orderNumber);
+
+    // 🟢 ส่งแจ้งเตือนเข้า Line OA ทันที
+    sendLineNotification(orderNumber, itemsText);
 
     // ปิดหน้าชำระเงิน
     closePayment();
 
     // แสดงหน้าสั่งซื้อสำเร็จ
-    document
-        .getElementById("success-modal")
-        .classList.add("show");
+    document.getElementById("success-modal").classList.add("show");
 }
 
 // =====================================================

@@ -436,70 +436,18 @@ function sendOrderToGoogleSheet(orderNumber) {
     });
 }
 
-// =====================================================
-// 🟢 LINE NOTIFICATION FUNCTION (เพิ่มระบบแจ้งเตือนเข้า Line OA)
-// =====================================================
-function sendLineNotification(orderNumber, itemsText) {
-    const address = `${customerData.place} ห้อง ${customerData.room}` + (customerData.detail ? ` (หมายเหตุ: ${customerData.detail})` : '');
-    
-    const message = `🔔 มีออเดอร์ใหม่เข้ามา!\n\n` +
-                    `📋 เลขออเดอร์: #${orderNumber}\n` +
-                    `👤 ชื่อ: ${customerData.name}\n` +
-                    `📞 เบอร์: ${customerData.phone}\n` +
-                    `📍 ที่อยู่: ${address}\n\n` +
-                    `🛒 รายการสินค้า:\n${itemsText}\n` +
-                    `💰 ยอดรวมทั้งสิ้น: ${getCartTotal()} บาท`;
-
-    fetch('https://api.line.me/v2/bot/message/push', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + LINE_ACCESS_TOKEN
-        },
-        body: JSON.stringify({
-            to: LINE_USER_ID,
-            messages: [{ type: 'text', text: message }]
-        })
-    })
-    .then(response => {
-        if (!response.ok) {
-            console.error('Line API Error status:', response.status);
-        } else {
-            console.log('ส่งแจ้งเตือนเข้า Line สำเร็จ');
-        }
-    })
-    .catch(error => console.error('Line Notification Error:', error));
-}
 
 // =====================================================
 // PAYMENT SUCCESS
 // =====================================================
 function paymentSuccess() {
-    // สร้างเลขออเดอร์
     const orderNumber = createOrderNumber();
-
-    // แสดงเลขออเดอร์
     document.getElementById("order-number").textContent = orderNumber;
 
-    // รวบรวมรายการสินค้าสำหรับส่งเข้า Line
-    let itemsText = "";
-    cart.forEach(function (item, index) {
-        let toppingNames = item.toppings && item.toppings.length > 0
-            ? item.toppings.map(t => t.name).join(", ")
-            : "ไม่มี Topping";
-        itemsText += `${index + 1}. ${item.name} x${item.quantity} (${toppingNames}) - ${item.price * item.quantity} บาท\n`;
-    });
-
-    // บันทึกออเดอร์ลง Google Sheets
+    // บันทึกออเดอร์ลง Google Sheets (และ Google จะช่วยยิงเข้า Line ให้เองอัตโนมัติ)
     sendOrderToGoogleSheet(orderNumber);
 
-    // 🟢 ส่งแจ้งเตือนเข้า Line OA ทันที
-    sendLineNotification(orderNumber, itemsText);
-
-    // ปิดหน้าชำระเงิน
     closePayment();
-
-    // แสดงหน้าสั่งซื้อสำเร็จ
     document.getElementById("success-modal").classList.add("show");
 }
 
